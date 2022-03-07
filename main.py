@@ -1,4 +1,4 @@
+import sys
 
-
-def get_all_users():
-    return
+if __name__ == '__main__':
+    print(sys.argv)

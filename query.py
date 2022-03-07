@@ -45,27 +45,38 @@ def is_reservation(room_id):
     cursor.execute('''SELECT id, end_time FROM user_room WHERE is_active=? and room_id=?''',
                    [True, room_id])
     user_room = cursor.fetchone()
-    pk = user_room[0]
-    end_time = user_room[1]
-    end_time = datetime.fromtimestamp(end_time / 1000)
-    if datetime.now() > end_time:
-        cursor.execute('''UPDATE user_room SET is_active=false WHERE id=?''', [pk])
-        connection.commit()
-        return True
-    return False
+    if user_room is not None:
+        pk = user_room[0]
+        end_time = user_room[1]
+        if end_time is int:
+            end_time = datetime.fromtimestamp(end_time / 1000)
+        else:
+            end_time = datetime.strptime(end_time, '%d-%m-%Y %H:%M')
+        if datetime.now() > end_time:
+            cursor.execute('''UPDATE user_room SET is_active=false WHERE id=?''', [pk])
+            connection.commit()
+            return True
+        return False
+    return True
 
 
-def reserve_by_user(user_id, room_id, **kwargs):
+def reserve_by_user(start_time, end_time, user_id, room_id):
     if is_reservation(room_id=room_id):
         cursor.execute(
             '''INSERT INTO user_room (start_time, end_time, is_active, user_id, room_id) 
-            VALUES (?, ?, ?, ?, ?)''', [])
+            VALUES (?, ?, ?, ?, ?)''', [start_time, end_time, True, user_id, room_id])
+        connection.commit()
+        return "Reserve Success"
+    else:
+        cursor.execute('''SELECT * FROM user_room WHERE is_active=? and room_id=?''', [True, room_id])
+        user_room = cursor.fetchone()
+        return user_room
 
 
-print(get_all_users())
-print(get_user(pk=2))
-print(get_all_rooms())
-print(get_room(pk=2))
-print(get_all_user_room())
-print(get_user_room(pk=1))
-print(is_reservation(room_id=1))
+# print(get_all_users())
+# print(get_user(pk=2))
+# print(get_all_rooms())
+# print(get_room(pk=2))
+# print(get_all_user_room())
+# print(get_user_room(pk=1))
+print(reserve_by_user("7-03-2022 14:15", "7-03-2022 14:42", 1, 3))
