@@ -1,4 +1,5 @@
 import sqlite3
+import services
 from datetime import datetime
 
 connection = sqlite3.connect('alif.db')
@@ -51,7 +52,8 @@ def is_reservation(room_id):
         if end_time is int:
             end_time = datetime.fromtimestamp(end_time / 1000)
         else:
-            end_time = datetime.strptime(end_time, '%d-%m-%Y %H:%M')
+            end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
+            print(end_time)
         if datetime.now() > end_time:
             cursor.execute('''UPDATE user_room SET is_active=false WHERE id=?''', [pk])
             connection.commit()
@@ -60,23 +62,22 @@ def is_reservation(room_id):
     return True
 
 
-def reserve_by_user(start_time, end_time, user_id, room_id):
+def reservation_by_user(start_time, end_time, user_id, room_id):
     if is_reservation(room_id=room_id):
         cursor.execute(
             '''INSERT INTO user_room (start_time, end_time, is_active, user_id, room_id) 
             VALUES (?, ?, ?, ?, ?)''', [start_time, end_time, True, user_id, room_id])
         connection.commit()
+
+        # sending mail
+        cursor.execute('''SELECT username, email FROM user WHERE id=?''', [user_id])
+        user = cursor.fetchone()
+        cursor.execute('''SELECT title FROM room WHERE id=?''', [room_id])
+        room = cursor.fetchone()
+        services.send_mail(user, start_time, end_time, room)
+
         return "Reserve Success"
     else:
         cursor.execute('''SELECT * FROM user_room WHERE is_active=? and room_id=?''', [True, room_id])
         user_room = cursor.fetchone()
         return user_room
-
-
-# print(get_all_users())
-# print(get_user(pk=2))
-# print(get_all_rooms())
-# print(get_room(pk=2))
-# print(get_all_user_room())
-# print(get_user_room(pk=1))
-print(reserve_by_user("7-03-2022 14:15", "7-03-2022 14:42", 1, 3))
