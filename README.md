@@ -18,7 +18,7 @@
 
 `python3 main.py check_room <room_id>` - **_checking room to occupied_**
 
-`python3 main.py occupy <start_datetime> <end_datetime> <user_id> <room_id>` - **Occupy the room**
+`python3 main.py occupy <start_datetime> <end_datetime> <user_id> <room_id>` - **occupy the room**
 
 
 <h1>VARIABLES</h1>
