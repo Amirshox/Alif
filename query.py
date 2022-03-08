@@ -36,7 +36,7 @@ def get_all_user_room():
     return user_room
 
 
-def get_all_reserve_rooms():
+def get_all_occupied_rooms():
     cursor.execute(
         '''UPDATE user_room SET is_active=false WHERE end_time < DATETIME('now', 'localtime') and is_active=true;''')
     connection.commit()
@@ -46,7 +46,7 @@ def get_all_reserve_rooms():
     return user_rooms
 
 
-def is_reservation(room_id):
+def is_occupy(room_id):
     cursor.execute('''SELECT id, end_time FROM user_room WHERE is_active=? and room_id=?''',
                    [True, room_id])
     user_room = cursor.fetchone()
@@ -65,7 +65,7 @@ def is_reservation(room_id):
     return True
 
 
-def reservation_by_user(start_time, end_time, user_id, room_id):
+def occupied_by_user(start_time, end_time, user_id, room_id):
     # sending mail and checking ids
     cursor.execute('''SELECT username, email FROM user WHERE id=?''', [user_id])
     user = cursor.fetchone()
@@ -77,13 +77,13 @@ def reservation_by_user(start_time, end_time, user_id, room_id):
         return "Please enter the valid data (room_id is incorrect)."
     services.send_mail(user, start_time, end_time, room)
 
-    if is_reservation(room_id=room_id):
+    if is_occupy(room_id=room_id):
         cursor.execute(
             '''INSERT INTO user_room (start_time, end_time, is_active, user_id, room_id) 
             VALUES (?, ?, ?, ?, ?)''', [start_time, end_time, True, user_id, room_id])
         connection.commit()
 
-        return "Reserve Success"
+        return "Occupied Success"
     else:
         cursor.execute('''SELECT * FROM user_room WHERE is_active=? and room_id=?''', [True, room_id])
         user_room = cursor.fetchone()
