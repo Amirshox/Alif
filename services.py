@@ -2,7 +2,7 @@ import smtplib
 
 
 def send_mail(user, start_time, end_time, room):
-    # TODO input your email and password
+    # TODO input your email and password for testing
     FROM = 'test@gmail.com'
     pwd = '12345678'
     if user is not None and room is not None:
