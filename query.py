@@ -36,10 +36,14 @@ def get_all_user_room():
     return user_room
 
 
-def get_user_room(pk):
-    cursor.execute('''SELECT * FROM user_room WHERE id=?''', [pk])
-    user_room = cursor.fetchone()
-    return user_room
+def get_all_reserve_rooms():
+    cursor.execute(
+        '''UPDATE user_room SET is_active=false WHERE end_time < DATETIME('now', 'localtime') and is_active=true;''')
+    connection.commit()
+    cursor.execute(
+        '''SELECT * FROM user_room LEFT JOIN room ON user_room.room_id = room.id LEFT JOIN user ON user_room.user_id = user.id WHERE is_active=true''')
+    user_rooms = cursor.fetchall()
+    return user_rooms
 
 
 def is_reservation(room_id):
@@ -53,7 +57,6 @@ def is_reservation(room_id):
             end_time = datetime.fromtimestamp(end_time / 1000)
         else:
             end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
-            print(end_time)
         if datetime.now() > end_time:
             cursor.execute('''UPDATE user_room SET is_active=false WHERE id=?''', [pk])
             connection.commit()
@@ -63,18 +66,22 @@ def is_reservation(room_id):
 
 
 def reservation_by_user(start_time, end_time, user_id, room_id):
+    # sending mail and checking ids
+    cursor.execute('''SELECT username, email FROM user WHERE id=?''', [user_id])
+    user = cursor.fetchone()
+    if user is None:
+        return "Please enter the valid data (user_id is incorrect)."
+    cursor.execute('''SELECT title FROM room WHERE id=?''', [room_id])
+    room = cursor.fetchone()
+    if room is None:
+        return "Please enter the valid data (room_id is incorrect)."
+    services.send_mail(user, start_time, end_time, room)
+
     if is_reservation(room_id=room_id):
         cursor.execute(
             '''INSERT INTO user_room (start_time, end_time, is_active, user_id, room_id) 
             VALUES (?, ?, ?, ?, ?)''', [start_time, end_time, True, user_id, room_id])
         connection.commit()
-
-        # sending mail
-        cursor.execute('''SELECT username, email FROM user WHERE id=?''', [user_id])
-        user = cursor.fetchone()
-        cursor.execute('''SELECT title FROM room WHERE id=?''', [room_id])
-        room = cursor.fetchone()
-        services.send_mail(user, start_time, end_time, room)
 
         return "Reserve Success"
     else:
